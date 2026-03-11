@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tracker/core/theme/app_colors.dart';
 import 'package:tracker/core/utils/date_utils.dart';
 import 'package:tracker/features/books/domain/entities/book_entity.dart';
 import 'package:tracker/features/books/domain/entities/reading_status.dart';
@@ -19,80 +20,173 @@ class StatisticsPage extends StatelessWidget {
           }
           final books = state.books;
           final stats = _computeStats(books);
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Reading Statistics', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              _StatRow(title: 'Total books read', value: '${stats.booksRead}'),
-              _StatRow(title: 'Total pages read', value: '${stats.totalPages}'),
-              _StatRow(title: 'Average rating', value: stats.avgRating?.toStringAsFixed(1) ?? '—'),
-              _StatRow(title: 'Books read this year', value: '${stats.booksThisYear}'),
-              _StatRow(title: 'Books read this month', value: '${stats.booksThisMonth}'),
-              const SizedBox(height: 24),
-              if (stats.pagesPerMonth.isNotEmpty) ...[
-                Text('Pages per month', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 200,
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: (stats.pagesPerMonth.values.isEmpty ? 1 : stats.pagesPerMonth.values.reduce((a, b) => a > b ? a : b) * 1.2),
-                      barGroups: stats.pagesPerMonth.entries.toList().asMap().entries.map((e) {
-                        return BarChartGroupData(
-                          x: e.key,
-                          barRods: [
-                            BarChartRodData(
-                              toY: e.value.value.toDouble(),
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 16,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Statistics',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Your reading at a glance',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _StatRow(title: 'Total books read', value: '${stats.booksRead}', icon: Icons.check_circle_rounded),
+                      const SizedBox(height: 10),
+                      _StatRow(title: 'Total pages read', value: '${stats.totalPages}', icon: Icons.auto_stories_rounded),
+                      const SizedBox(height: 10),
+                      _StatRow(title: 'Average rating', value: stats.avgRating?.toStringAsFixed(1) ?? '—', icon: Icons.star_rounded),
+                      const SizedBox(height: 10),
+                      _StatRow(title: 'Books this year', value: '${stats.booksThisYear}', icon: Icons.calendar_today_rounded),
+                      const SizedBox(height: 10),
+                      _StatRow(title: 'Books this month', value: '${stats.booksThisMonth}', icon: Icons.trending_up_rounded),
+                      const SizedBox(height: 28),
+                      if (stats.pagesPerMonth.isNotEmpty) ...[
+                        Text(
+                          'Pages per month',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.cardDark : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: SizedBox(
+                            height: 200,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: (stats.pagesPerMonth.values.isEmpty ? 1 : stats.pagesPerMonth.values.reduce((a, b) => a > b ? a : b) * 1.2).toDouble(),
+                                barGroups: stats.pagesPerMonth.entries.toList().asMap().entries.map((e) {
+                                  return BarChartGroupData(
+                                    x: e.key,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: e.value.value.toDouble(),
+                                        color: AppColors.primary,
+                                        width: 20,
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                      ),
+                                    ],
+                                    showingTooltipIndicators: [0],
+                                  );
+                                }).toList(),
+                                titlesData: FlTitlesData(
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 36,
+                                      getTitlesWidget: (v, _) => Text(
+                                        '${v.toInt()}',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (v, _) {
+                                        final list = stats.pagesPerMonth.keys.toList();
+                                        final i = v.toInt();
+                                        if (i >= 0 && i < list.length) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              list[i],
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  getDrawingHorizontalLine: (value) => FlLine(
+                                    color: Theme.of(context).dividerColor.withOpacity(0.3),
+                                    strokeWidth: 1,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ],
-                          showingTooltipIndicators: [0],
-                        );
-                      }).toList(),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 32, getTitlesWidget: (v, _) => Text('${v.toInt()}'))),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, _) {
-                              final list = stats.pagesPerMonth.keys.toList();
-                              final i = v.toInt();
-                              if (i >= 0 && i < list.length) return Text(list[i], style: const TextStyle(fontSize: 10));
-                              return const Text('');
-                            },
                           ),
                         ),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      gridData: FlGridData(show: true, drawVerticalLine: false),
-                    ),
+                        const SizedBox(height: 28),
+                      ],
+                      if (stats.byGenre.isNotEmpty) ...[
+                        Text(
+                          'Books by genre',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.cardDark : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: SizedBox(
+                            height: 220,
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 3,
+                                centerSpaceRadius: 40,
+                                sections: stats.byGenre.entries.map((e) => PieChartSectionData(
+                                  value: e.value.toDouble(),
+                                  title: '${e.key}\n${e.value}',
+                                  color: _colorForGenre(e.key),
+                                  radius: 48,
+                                  titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                )).toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 100),
+                    ],
                   ),
                 ),
-              ],
-              const SizedBox(height: 24),
-              if (stats.byGenre.isNotEmpty) ...[
-                Text('Books by genre', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 200,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      sections: stats.byGenre.entries.map((e) => PieChartSectionData(
-                        value: e.value.toDouble(),
-                        title: '${e.key}\n${e.value}',
-                        color: _colorForGenre(e.key),
-                        radius: 60,
-                      )).toList(),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ],
           );
         },
@@ -102,7 +196,8 @@ class StatisticsPage extends StatelessWidget {
 
   Color _colorForGenre(String genre) {
     final hash = genre.hashCode.abs();
-    return Color(0xFF3E7CB1 + (hash % 0xFFFFFF) % 0x800000);
+    final hues = [0xFF3E7CB1, 0xFF22C55E, 0xFFF59E0B, 0xFF8B5CF6, 0xFFEC4899];
+    return Color(hues[hash % hues.length]);
   }
 
   _Stats _computeStats(List<BookEntity> books) {
@@ -162,17 +257,54 @@ class _Stats {
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow({required this.title, required this.value});
+  const _StatRow({required this.title, required this.value, required this.icon});
 
   final String title;
   final String value;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(title),
-        trailing: Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
       ),
     );
   }

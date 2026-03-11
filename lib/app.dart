@@ -38,6 +38,17 @@ class BookTrackerApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system,
             routerConfig: appRouter.router,
+            builder: (context, child) {
+              final padding = MediaQuery.of(context).padding;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: padding.copyWith(
+                    top: padding.top + 12,
+                  ),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
           if (isAuthenticated && state.user != null) {
             return BlocProvider<BooksBloc>(
